@@ -1,5 +1,5 @@
-//To compile (linux/mac): gcc cbmp.c main.c -o main.out -std=c99
-//To run (linux/mac): ./main.out example.bmp example_inv.bmp
+//To compile (linux/mac): gcc code_and_samples/cbmp.c code_and_samples/main.c -o main.out -std=c99
+//To run (linux/mac): ./main.out code_and_samples/example.bmp code_and_samples/example_inv.bmp
 //To run: .\main.out <input file path> <output file path>
 
 //To compile (win): gcc cbmp.c main.c -o main.exe -std=c99
@@ -29,7 +29,7 @@ void rbg2gray(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS], un
   {
     for (int y = 0; y < BMP_HEIGTH; y++)
     {
-      float BoW = (input_image[x][y][0] + input_image[x][y][1] + input_image[x][y][2])/3;
+      int BoW = (input_image[x][y][0] + input_image[x][y][1] + input_image[x][y][2])/3;
       gray_image[x][y] = BoW;
     }
   }
@@ -37,17 +37,20 @@ void rbg2gray(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS], un
 }
 
 //Function to convert the grey-scale image to a binary image (black and white) (TEST)
-void gray2bin(unsigned char gray_image[BMP_WIDTH][BMP_HEIGTH], unsigned char bin_image[BMP_WIDTH][BMP_HEIGTH]){
+void gray2bin(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS], unsigned char bin_image[BMP_WIDTH][BMP_HEIGTH][0]){
   for (int x = 0; x < BMP_WIDTH; x++)
   {
     for (int y = 0; y < BMP_HEIGTH; y++)
     {
-      if (gray_image[x][y] > 90){
-        bin_image[x][y] = 255;
+      double BoW = (input_image[x][y][0] + input_image[x][y][1] + input_image[x][y][2])/3;
+
+      if (BoW > 90){
+        bin_image[x][y][0] = 255;
       }
       else {
-        bin_image[x][y] = 0;
+        bin_image[x][y][0] = 0;
       }
+      printf("%d\n", bin_image[x][y][0]);
     }
   }
 }
@@ -81,11 +84,11 @@ int main(int argc, char** argv)
 
   //Run inversion
   //invert(input_image,output_image);
-  rbg2gray(input_image,gray_image);
-  //gray2bin(gray_image,bin_image);
+  //rbg2gray(input_image,gray_image);
+  gray2bin(input_image,bin_image);
 
   //Save image to file
-  write_bitmap(gray_image, argv[2]);
+  write_bitmap(bin_image, argv[2]);
 
   //Saves a grey scale image
   //write_bitmap(gray_image, argv[2]);
