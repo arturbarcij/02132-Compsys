@@ -23,44 +23,68 @@ void invert(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS], unsi
   }
 }
 
-//Function to convert to grey scale image (TEST)
-void rbg2gray(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS], unsigned char gray_image[BMP_WIDTH][BMP_HEIGTH]){
+void rgb2gray(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS], unsigned char gray_image[BMP_WIDTH][BMP_HEIGTH]){
   for (int x = 0; x < BMP_WIDTH; x++)
   {
     for (int y = 0; y < BMP_HEIGTH; y++)
     {
-      int BoW = (input_image[x][y][0] + input_image[x][y][1] + input_image[x][y][2])/3;
-      gray_image[x][y] = BoW;
+      gray_image[x][y] = (input_image[x][y][0] + input_image[x][y][1] + input_image[x][y][2])*0.3333;
     }
   }
-
 }
 
-//Function to convert the grey-scale image to a binary image (black and white) (TEST)
-void gray2bin(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS], unsigned char bin_image[BMP_WIDTH][BMP_HEIGTH][0]){
+void Binarize(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH], unsigned char bin_image[BMP_WIDTH][BMP_HEIGTH]){
   for (int x = 0; x < BMP_WIDTH; x++)
   {
     for (int y = 0; y < BMP_HEIGTH; y++)
     {
-      double BoW = (input_image[x][y][0] + input_image[x][y][1] + input_image[x][y][2])/3;
-
-      if (BoW > 90){
-        bin_image[x][y][0] = 255;
+      if (input_image[x][y] > 90)
+      {
+        bin_image[x][y] = 255;
       }
-      else {
-        bin_image[x][y][0] = 0;
+      else
+      {
+        bin_image[x][y] = 0;
       }
-      printf("%d\n", bin_image[x][y][0]);
     }
   }
 }
 
+void Convert23D(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH], unsigned char output_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS]){
+  for (int x = 0; x < BMP_WIDTH; x++)
+  {
+    for (int y = 0; y < BMP_HEIGTH; y++)
+    {
+      for (int c = 0; c < BMP_CHANNELS; c++)
+      {
+      output_image[x][y][c] = input_image[x][y];
+      }
+    }
+  }
+}
 
-  //Declaring the array to store the image (unsigned char = unsigned 8 bit)
-  unsigned char input_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS];
-  unsigned char output_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS];
-  unsigned char gray_image[BMP_WIDTH][BMP_HEIGTH];
-  unsigned char bin_image[BMP_WIDTH][BMP_HEIGTH];
+void erosion(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH], unsigned char eroded_image[BMP_WIDTH][BMP_HEIGTH]){
+  unsigned char deleter[950][2];
+  for (int x = 0; x < BMP_WIDTH; x++)
+  {
+    for (int y = 0; y < BMP_HEIGTH; y++)
+    {
+      if (input_image[x][y] == 255)
+      {
+        if (input_image[x-1][y] == 0 || input_image[x+1][y] == 0 || input_image[x][y-1] == 0 || input_image[x][y+1] == 0)
+        {
+
+        }
+    }
+  }
+}
+}
+//Declaring the array to store the image (unsigned char = unsigned 8 bit)
+unsigned char input_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS];
+unsigned char output_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS];
+unsigned char gray_image[BMP_WIDTH][BMP_HEIGTH];
+unsigned char bin_image[BMP_WIDTH][BMP_HEIGTH];
+unsigned char eroded_image[BMP_WIDTH][BMP_HEIGTH];
 
 //Main function
 int main(int argc, char** argv)
@@ -84,15 +108,15 @@ int main(int argc, char** argv)
 
   //Run inversion
   //invert(input_image,output_image);
-  //rbg2gray(input_image,gray_image);
-  gray2bin(input_image,bin_image);
+  rgb2gray(input_image, gray_image);
+  Binarize(gray_image, bin_image);
+
+  //erosion(bin_image, eroded_image);
+
+  Convert23D(bin_image, output_image);
 
   //Save image to file
-  write_bitmap(bin_image, argv[2]);
-
-  //Saves a grey scale image
-  //write_bitmap(gray_image, argv[2]);
-
+  write_bitmap(output_image, argv[2]);
 
   printf("Done!\n");
   return 0;
