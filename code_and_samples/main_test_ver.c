@@ -33,7 +33,35 @@ void make3d(unsigned char output_image[BMP_WIDTH][BMP_HEIGTH], unsigned char out
     }
   }
 
+// hvis den er død har den værdi 0
+// hvis den er levende har den værdi 255 basically > 0
+
+
+
+void erode(unsigned char output_image[BMP_WIDTH][BMP_HEIGTH]) {
+    int arr_x[950];
+    int arr_y[950];
+    int i=0;
+    for (int x = 0; x < BMP_WIDTH; x++) {
+    
+      for (int y = 0; y < BMP_HEIGTH; y++) {
+      
+        if(output_image[x][y] == 255){
+          if(output_image[x][y + 1] == 0 || output_image[x][y - 1] == 0
+          || output_image[x + 1][y] == 0 || output_image[x - 1][y] == 0) {
+            arr_x[i]=x;
+            arr_y[i]=y;
+            i++;
+          }
+        } 
+    }
+  }
 }
+//sættes en kø(datastruktur tuple) så alle naboerne dør ikke med det samme
+//et tuple med levende cell koordinater, som dør(eroded)
+}
+
+
   //Declaring the array to store the image (unsigned char = unsigned 8 bit)
   unsigned char input_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS];
   unsigned char output_image[BMP_WIDTH][BMP_HEIGTH];
