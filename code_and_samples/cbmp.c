@@ -119,9 +119,10 @@ void write_bitmap(unsigned char input_image_array[BMP_WIDTH][BMP_HEIGTH][BMP_CHA
   {
     for (int y = 0; y < BMP_HEIGTH; y++)
     {
-      r = input_image_array[x][BMP_HEIGTH-1-y][0];
-      g = input_image_array[x][BMP_HEIGTH-1-y][1];
-      b = input_image_array[x][BMP_HEIGTH-1-y][2];
+        r=input_image_array[x][BMP_HEIGTH-1-y][0];
+        g=input_image_array[x][BMP_HEIGTH-1-y][1];
+        b=input_image_array[x][BMP_HEIGTH-1-y][2];
+        
       set_pixel_rgb(out_bmp, x, y, r, g, b);
     }
   }
