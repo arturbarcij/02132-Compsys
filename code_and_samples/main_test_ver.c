@@ -32,34 +32,46 @@ void make3d(unsigned char output_image[BMP_WIDTH][BMP_HEIGTH], unsigned char out
       output_image2[x][y][c] = output_image[x][y];
     }
   }
-
+}
 // hvis den er død har den værdi 0
 // hvis den er levende har den værdi 255 basically > 0
 
 
 
 void erode(unsigned char output_image[BMP_WIDTH][BMP_HEIGTH]) {
-    int arr_x[950];
-    int arr_y[950];
-    int i=0;
+    int arr_x[100000];
+    int arr_y[100000];
+    int i = 0;
     for (int x = 0; x < BMP_WIDTH; x++) {
-    
-      for (int y = 0; y < BMP_HEIGTH; y++) {
-      
-        if(output_image[x][y] == 255){
-          if(output_image[x][y + 1] == 0 || output_image[x][y - 1] == 0
-          || output_image[x + 1][y] == 0 || output_image[x - 1][y] == 0) {
-            arr_x[i]=x;
-            arr_y[i]=y;
-            i++;
-          }
-        } 
+        for (int y = 0; y < BMP_HEIGTH; y++) {
+            if (output_image[x][y] == 255) {
+                // Check for out of bonds hallojsa
+                if ((x > 0 && output_image[x - 1][y] == 0) ||
+                    (x < BMP_WIDTH - 1 && output_image[x + 1][y] == 0) ||
+                    (y > 0 && output_image[x][y - 1] == 0) ||
+                    (y < BMP_HEIGTH - 1 && output_image[x][y + 1] == 0)) 
+                {
+                    arr_x[i] = x;
+                    arr_y[i] = y;
+                    i++;
+                    // tjek boundary på array
+                    if (i >= 100000) {
+                        fprintf(stderr, "du har en lille array brorz");
+                        return;
+                    }
+                }
+            }
+        }
     }
-  }
+    
+    for (int t = 0; t < i; t++) {
+        output_image[arr_x[t]][arr_y[t]] = 0;
+    }
 }
+
 //sættes en kø(datastruktur tuple) så alle naboerne dør ikke med det samme
 //et tuple med levende cell koordinater, som dør(eroded)
-}
+
 
 
   //Declaring the array to store the image (unsigned char = unsigned 8 bit)
@@ -89,11 +101,17 @@ int main(int argc, char** argv)
 
   //Run inversion
   makeWhiteNBlack(input_image,output_image);
-
+  
+  erode(output_image);
+  erode(output_image);
+  erode(output_image);
+  
   make3d(output_image,output_image2);
 
-  //Save image to file
   write_bitmap(output_image2, argv[2]);
+
+  //Save image to file
+  
 
   printf("Done!\n");
   return 0;
