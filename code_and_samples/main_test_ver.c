@@ -46,7 +46,7 @@ void erode(unsigned char output_image[BMP_WIDTH][BMP_HEIGTH]) {
         for (int y = 0; y < BMP_HEIGTH; y++) {
             if (output_image[x][y] == 255) {
                 // Check for out of bonds hallojsa
-                if ((x > 0 && output_image[x - 1][y] == 0) ||
+                if ((x > 0 && output_image[x - 1][y] == 0) || (x==0||y==0||x== BMP_WIDTH-1||y==BMP_HEIGTH-1) || 
                     (x < BMP_WIDTH - 1 && output_image[x + 1][y] == 0) ||
                     (y > 0 && output_image[x][y - 1] == 0) ||
                     (y < BMP_HEIGTH - 1 && output_image[x][y + 1] == 0)) 
@@ -69,6 +69,45 @@ void erode(unsigned char output_image[BMP_WIDTH][BMP_HEIGTH]) {
     }
 }
 
+int cellDetect(unsigned char output_image[BMP_WIDTH][BMP_HEIGTH]){
+  int countDetects=0;
+  int t=0;
+  for (int x = 0; x < BMP_WIDTH-14; x++) 
+  {
+    for (int y = 0; y < BMP_HEIGTH-14; y++) 
+    {
+      for(int z= 0; z < 14; z++)
+      {
+        
+        if((output_image[x+z][y]==255)||(output_image[x][y+z]==255)||(output_image[x+14][y+z]==255)||(output_image[x+z][y+14]==255))
+        {
+        }
+        else
+        {
+        t=0;
+          for(int p=0;p<12;p++)
+          {
+            for(int p=0;p<12;p++)
+            {
+              if(output_image[x+p+1][y+z+1]==255)
+              {
+                if(t==0)
+                {
+                  countDetects++;
+                  t++;
+                }
+                output_image[x+p+1][y+z+1]=0;
+                
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+  }        
+  return countDetects;
+}
 //sættes en kø(datastruktur tuple) så alle naboerne dør ikke med det samme
 //et tuple med levende cell koordinater, som dør(eroded)
 
@@ -102,9 +141,14 @@ int main(int argc, char** argv)
   //Run inversion
   makeWhiteNBlack(input_image,output_image);
   
-  erode(output_image);
-  erode(output_image);
-  erode(output_image);
+  int detects=0;
+  for(int c=0; c<9; c++)
+  {
+    erode(output_image);
+    detects+= cellDetect(output_image);
+  }
+
+  printf("%d",detects);
   
   make3d(output_image,output_image2);
 
