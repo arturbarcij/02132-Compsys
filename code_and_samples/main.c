@@ -7,6 +7,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
 #include "cbmp.h"
 
 //Function to invert pixels of an image (negative)
@@ -94,40 +95,76 @@ void erode(unsigned char output_image[BMP_WIDTH][BMP_HEIGTH]) {
     }
 }
 
-
-void Detection(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH],unsigned char output_image[BMP_WIDTH][BMP_HEIGTH]){
-  int flag = 0;
+int Detection(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH], int cell_detected, int x_coords[500], int y_coords[500]){
+  int exclusion_flag = 0;
   int detect_flag = 0;
-  int cell_detected = 0;
+  int OOB_flag = 0;
 
   for (int x = 0; x < BMP_WIDTH; x++){
     for (int y = 0; y < BMP_HEIGTH; y++){ //Looping through the eroded image
-
+    exclusion_flag = 0;
+    detect_flag = 0;
     if (input_image[x][y] == 255){ //If a white pixel is detected
-      flag = 0;
-      detect_flag = 0;
 
-      for (int i = 0; i < 7; i++){
-        for (int j = 0; j < 7; j++){
 
-          if ((input_image[x + 7][y + j] == 255 || input_image[x - 7][y - j] == 255 || input_image[x - 7][y + j] == 255 || input_image[x + 7][y - j] == 255) & !flag) {
-            printf("%s","White pixel detected in exclusion zone!\n");
-            flag = 1;
-            continue;
+      for (int i = 0; i < 8; i++){
+          if ((input_image[x + 7][y + i] == 255 || input_image[x - 7][y - i] == 255 || input_image[x - 7][y + i] == 255 || input_image[x + 7][y - i] == 255
+          ||input_image[x + i][y + 7] == 255 || input_image[x - i][y - 7] == 255 || input_image[x - i][y + 7] == 255 || input_image[x + i][y - 7] == 255 ) & !exclusion_flag) {
+            exclusion_flag = 1;
+            break;
           }
           else {
-            if (i == 6 && j == 6 && !detect_flag){
+            if (i == 6 && !detect_flag && !exclusion_flag){
               detect_flag = 1;
-              cell_detected++;
-              printf("%d", cell_detected);
+              cell_detected += 1;
+              x_coords[cell_detected] = x;
+              y_coords[cell_detected] = y;
+    
+              for (int p = 0; p < 7; p++){
+                for (int q = 0; q < 7; q++){
+
+                    if (x + p > BMP_WIDTH || y + q > BMP_HEIGTH || x - p < 0 || y - q < 0){
+                      printf(stderr,"Out of bounds");
+                      break;
+                    }
+                  input_image[x + p][y + q] = 100;
+                  input_image[x + p][y - q] = 100;
+                  input_image[x - p][y + q] = 100;
+                  input_image[x - p][y - q] = 100;
+                  }
+              }
             }
             }
-          }
         }
       }
     }
   }
-  printf("%d", cell_detected);
+ return cell_detected;
+}
+
+void DrawCrosses(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS], int x_coords[500], int y_coords[500], int cell_detected){
+  //Make the crosses larger than 1-pixel wide
+  for (int i = 0; i < cell_detected; i++){
+    for (int x = 0; x < 7; x++){
+      for (int w = -1; w <= 1; w++){
+        input_image[x_coords[i] + x][y_coords[i] + w][0] = 255; 
+        input_image[x_coords[i] + x][y_coords[i] + w][1] = 0;
+        input_image[x_coords[i] + x][y_coords[i] + w][2] = 0;   
+
+        input_image[x_coords[i] - x][y_coords[i] + w][0] = 255;
+        input_image[x_coords[i] - x][y_coords[i] + w][1] = 0;
+        input_image[x_coords[i] - x][y_coords[i] + w][2] = 0;
+
+        input_image[x_coords[i] + w][y_coords[i] + x][0] = 255;
+        input_image[x_coords[i] + w][y_coords[i] + x][1] = 0;
+        input_image[x_coords[i] + w][y_coords[i] + x][2] = 0;
+
+        input_image[x_coords[i] + w][y_coords[i] - x][0] = 255;
+        input_image[x_coords[i] + w][y_coords[i] - x][1] = 0;
+        input_image[x_coords[i] + w][y_coords[i] - x][2] = 0;
+      }
+    }
+  }
 }
 
 void Otsu2(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH], int T) {
@@ -262,6 +299,10 @@ unsigned char gray_image[BMP_WIDTH][BMP_HEIGTH];
 unsigned char bin_image[BMP_WIDTH][BMP_HEIGTH];
 unsigned char eroded_image[BMP_WIDTH][BMP_HEIGTH];
 unsigned char detect_image[BMP_WIDTH][BMP_HEIGTH];
+int cell_detected = 0;
+int x_coords[500];
+int y_coords[500];
+
 
 //Main function
 int main(int argc, char** argv)
@@ -270,6 +311,8 @@ int main(int argc, char** argv)
   //argv[0] is a string with the name of the program
   //argv[1] is the first command line argument (input image)
   //argv[2] is the second command line argument (output image)
+
+  int countDetects = 0;
 
   //Checking that 2 arguments are passed
   if (argc != 3)
@@ -288,21 +331,17 @@ int main(int argc, char** argv)
   rgb2gray(input_image, gray_image);
   Binarize(gray_image, bin_image);
 
-  erode(bin_image);
-  erode(bin_image);
-  erode(bin_image);
-  erode(bin_image);
-  erode(bin_image);
+  for (int i = 0; i < 9; i++){
+    sleep(3);
+    erode(bin_image);
+    countDetects += Detection(bin_image, cell_detected, x_coords, y_coords);
+    printf("Number of cells detected: %d\n", countDetects);
+    Convert23D(bin_image, output_image);
+    DrawCrosses(input_image, x_coords, y_coords, countDetects);
+    write_bitmap(input_image, argv[2]);
+  }
 
 
-  //erosion(bin_image, eroded_image);
-
-  // Otsu2(gray_image, 0);
-  Detection(bin_image, detect_image);
-  Convert23D(detect_image, output_image);
-
-  //Save image to file
-  write_bitmap(output_image, argv[2]);
 
   printf("Done!\n");
   return 0;
