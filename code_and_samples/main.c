@@ -63,24 +63,72 @@ void Convert23D(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH], unsigned char 
   }
 }
 
-void erosion(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH], unsigned char eroded_image[BMP_WIDTH][BMP_HEIGTH]){
-  unsigned char deleter[950][2];
-  for (int x = 0; x < BMP_WIDTH; x++)
-  {
-    for (int y = 0; y < BMP_HEIGTH; y++)
-    {
-      if (input_image[x][y] == 255)
-      {
-        if (input_image[x-1][y] == 0 || input_image[x+1][y] == 0 || input_image[x][y-1] == 0 || input_image[x][y+1] == 0)
-        {
-
+void erode(unsigned char output_image[BMP_WIDTH][BMP_HEIGTH]) {
+    int arr_x[100000];
+    int arr_y[100000];
+    int i = 0;
+    for (int x = 0; x < BMP_WIDTH; x++) {
+        for (int y = 0; y < BMP_HEIGTH; y++) {
+            if (output_image[x][y] == 255) {
+                // Check for out of bonds hallojsa
+                if ((x > 0 && output_image[x - 1][y] == 0) ||
+                    (x < BMP_WIDTH - 1 && output_image[x + 1][y] == 0) ||
+                    (y > 0 && output_image[x][y - 1] == 0) ||
+                    (y < BMP_HEIGTH - 1 && output_image[x][y + 1] == 0)) 
+                {
+                    arr_x[i] = x;
+                    arr_y[i] = y;
+                    i++;
+                    // tjek boundary på array
+                    if (i >= 100000) {
+                        fprintf(stderr, "du har en lille array brorz");
+                        return;
+                    }
+                }
+            }
         }
     }
+    
+    for (int t = 0; t < i; t++) {
+        output_image[arr_x[t]][arr_y[t]] = 0;
+    }
+}
+
+
+void Detection(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH],unsigned char output_image[BMP_WIDTH][BMP_HEIGTH]){
+  int flag = 0;
+  int detect_flag = 0;
+  int cell_detected = 0;
+
+  for (int x = 0; x < BMP_WIDTH; x++){
+    for (int y = 0; y < BMP_HEIGTH; y++){ //Looping through the eroded image
+
+    if (input_image[x][y] == 255){ //If a white pixel is detected
+      flag = 0;
+      detect_flag = 0;
+
+      for (int i = 0; i < 7; i++){
+        for (int j = 0; j < 7; j++){
+
+          if ((input_image[x + 7][y + j] == 255 || input_image[x - 7][y - j] == 255 || input_image[x - 7][y + j] == 255 || input_image[x + 7][y - j] == 255) & !flag) {
+            printf("%s","White pixel detected in exclusion zone!\n");
+            flag = 1;
+            continue;
+          }
+          else {
+            if (i == 6 && j == 6 && !detect_flag){
+              detect_flag = 1;
+              cell_detected++;
+              printf("%d", cell_detected);
+            }
+            }
+          }
+        }
+      }
+    }
   }
+  printf("%d", cell_detected);
 }
-}
-
-
 
 void Otsu2(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH], int T) {
   int N = BMP_WIDTH*BMP_HEIGTH;
@@ -115,6 +163,7 @@ void Otsu2(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH], int T) {
     q2 = N - q1;
     sumB += t * hist[t];
     mu1 = sumB/q1;
+
     mu2 = (sumB - sum)/q2;
 
     var = q1 * q2 * (mu1 - mu2) * (mu1 - mu2);
@@ -126,6 +175,7 @@ void Otsu2(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH], int T) {
     }
   }
 }
+
 
 void Otsu(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH], int T) {
 // Maximaise the variance between the two classes (forebground (cells) and background (non-cells))
@@ -211,6 +261,7 @@ unsigned char output_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS];
 unsigned char gray_image[BMP_WIDTH][BMP_HEIGTH];
 unsigned char bin_image[BMP_WIDTH][BMP_HEIGTH];
 unsigned char eroded_image[BMP_WIDTH][BMP_HEIGTH];
+unsigned char detect_image[BMP_WIDTH][BMP_HEIGTH];
 
 //Main function
 int main(int argc, char** argv)
@@ -237,11 +288,18 @@ int main(int argc, char** argv)
   rgb2gray(input_image, gray_image);
   Binarize(gray_image, bin_image);
 
+  erode(bin_image);
+  erode(bin_image);
+  erode(bin_image);
+  erode(bin_image);
+  erode(bin_image);
+
+
   //erosion(bin_image, eroded_image);
 
-  Convert23D(bin_image, output_image);
-
-  Otsu2(gray_image, 0);
+  // Otsu2(gray_image, 0);
+  Detection(bin_image, detect_image);
+  Convert23D(detect_image, output_image);
 
   //Save image to file
   write_bitmap(output_image, argv[2]);
