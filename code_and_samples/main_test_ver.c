@@ -111,8 +111,6 @@ int cellDetect(unsigned char output_image[BMP_WIDTH][BMP_HEIGTH]){
 //sættes en kø(datastruktur tuple) så alle naboerne dør ikke med det samme
 //et tuple med levende cell koordinater, som dør(eroded)
 
-
-
   //Declaring the array to store the image (unsigned char = unsigned 8 bit)
   unsigned char input_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS];
   unsigned char output_image[BMP_WIDTH][BMP_HEIGTH];
@@ -142,7 +140,7 @@ int main(int argc, char** argv)
   makeWhiteNBlack(input_image,output_image);
   
   int detects=0;
-  for(int c=0; c<9; c++)
+  for(int c=0; c<12; c++)
   {
     erode(output_image);
     detects+= cellDetect(output_image);
