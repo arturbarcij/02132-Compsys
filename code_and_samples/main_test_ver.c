@@ -45,7 +45,7 @@ void erode(unsigned char output_image[BMP_WIDTH][BMP_HEIGTH]) {
     for (int x = 0; x < BMP_WIDTH; x++) {
         for (int y = 0; y < BMP_HEIGTH; y++) {
             if (output_image[x][y] == 255) {
-                // Check for out of bonds hallojsa
+                // Check for out of bonds
                 if ((x > 0 && output_image[x - 1][y] == 0) || (x==0||y==0||x== BMP_WIDTH-1||y==BMP_HEIGTH-1) || 
                     (x < BMP_WIDTH - 1 && output_image[x + 1][y] == 0) ||
                     (y > 0 && output_image[x][y - 1] == 0) ||
@@ -56,7 +56,7 @@ void erode(unsigned char output_image[BMP_WIDTH][BMP_HEIGTH]) {
                     i++;
                     // tjek boundary på array
                     if (i >= 100000) {
-                        fprintf(stderr, "du har en lille array brorz");
+                        fprintf(stderr, "test boundary of array");
                         return;
                     }
                 }
@@ -156,5 +156,6 @@ int main(int argc, char** argv)
   
 
   printf("Done!\n");
+
   return 0;
 }
