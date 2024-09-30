@@ -405,3 +405,6 @@ int main(int argc, char** argv)
 
 //To compile (win): gcc cbmp.c main.c -o main.exe -std=c99
 //To run (win): main.exe example.bmp example_inv.bmp
+
+//To run execution time analysis add flag
+//To run (win): gcc cbmp.c main.c -o main.exe -std=c99 -DTIME_ANALYSIS
