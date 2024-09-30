@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <math.h>
 #include "cbmp.h"
+#include <time.h>
 
 //Function to invert pixels of an image (negative)
 void invert(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS], unsigned char output_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS]){
@@ -320,6 +321,8 @@ int y_coords[500];
 //Main function
 int main(int argc, char** argv)
 {
+       clock_t start, end;
+       double cpu_time_used;
   //argc counts how may arguments are passed
   //argv[0] is a string with the name of the program
   //argv[1] is the first command line argument (input image)
@@ -346,13 +349,26 @@ int main(int argc, char** argv)
 
   for (int i = 0; i < 3; i++){
     sleep(1);
+    // Start timing before erosion
+    start = clock();
     erode(bin_image);
+    // End timing after erosion
+    end = clock();
+    // Calculate the time difference in milliseconds
+    cpu_time_used = ((double) (end - start)) * 1000.0 / CLOCKS_PER_SEC;
+    printf("Time for erosion %d: %f ms\n", i + 1, cpu_time_used);
+
     countDetects += Detection(bin_image, cell_detected, x_coords, y_coords);
+
     printf("Number of cells detected: %d\n", countDetects);
+
     Convert23D(bin_image, output_image);
     DrawCrosses(input_image, x_coords, y_coords, countDetects);
+
+    // Write the output image after each iteration
     write_bitmap(input_image, argv[2]);
   }
+        
 
   printf("Done!\n");
   return 0;
