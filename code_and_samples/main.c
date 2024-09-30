@@ -113,8 +113,10 @@ int Detection(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH], int cell_detecte
     if (input_image[x][y] == 255){ //If a white pixel is detected
 
       for (int i = 0; i < 8; i++){
-          if ((input_image[x + 7][y + i] == 255 || input_image[x - 7][y - i] == 255 || input_image[x - 7][y + i] == 255 || input_image[x + 7][y - i] == 255
-          ||input_image[x + i][y + 7] == 255 || input_image[x - i][y - 7] == 255 || input_image[x - i][y + 7] == 255 || input_image[x + i][y - 7] == 255 ) & !exclusion_flag) {
+        int white = 255;
+        int size = 7;
+          if ((input_image[x + size][y + i] == white || input_image[x - size][y - i] == white || input_image[x - size][y + i] == white || input_image[x + size][y - i] == white
+          ||input_image[x + i][y + size] == white || input_image[x - i][y - size] == white || input_image[x - i][y + size] == white || input_image[x + i][y - size] == white ) & !exclusion_flag) {
             exclusion_flag = 1;
             break;
           }
@@ -130,7 +132,7 @@ int Detection(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH], int cell_detecte
                 for (int q = 0; q < 7; q++){
 
                     if ((x + p > BMP_WIDTH || y + q > BMP_HEIGTH || x - p < 0 || y - q < 0)){
-                      printf(stderr,"Out of bounds (Detection)\n");
+                      fprintf(stderr,"Out of bounds (Detection)\n");
                       //Set the pixel which is out of bounds to black, whenever we try to access a pixel outside the image
                       //OOB_flag = !OOB_flag;
                       break;
@@ -342,18 +344,15 @@ int main(int argc, char** argv)
   rgb2gray(input_image, gray_image);
   Binarize(gray_image, bin_image);
 
-  // for (int i = 0; i < 3; i++){
-  //   sleep(1);
-  //   erode(bin_image);
-  //   countDetects += Detection(bin_image, cell_detected, x_coords, y_coords);
-  //   printf("Number of cells detected: %d\n", countDetects);
-  //   Convert23D(bin_image, output_image);
-  //   DrawCrosses(input_image, x_coords, y_coords, countDetects);
-  //   write_bitmap(input_image, argv[2]);
-  // }
-
-  Convert23D(bin_image, output_image);
-  write_bitmap(output_image, argv[2]);
+  for (int i = 0; i < 3; i++){
+    sleep(1);
+    erode(bin_image);
+    countDetects += Detection(bin_image, cell_detected, x_coords, y_coords);
+    printf("Number of cells detected: %d\n", countDetects);
+    Convert23D(bin_image, output_image);
+    DrawCrosses(input_image, x_coords, y_coords, countDetects);
+    write_bitmap(input_image, argv[2]);
+  }
 
   printf("Done!\n");
   return 0;

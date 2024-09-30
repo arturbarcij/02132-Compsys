@@ -82,7 +82,7 @@ void erode(unsigned char output_image[BMP_WIDTH][BMP_HEIGTH]) {
                     i++;
                     // tjek boundary på array
                     if (i >= 100000) {
-                        fprintf(stderr, "du har en lille array brorz");
+                        fprintf(stderr, "test boundaries");
                         return;
                     }
                 }
@@ -124,7 +124,7 @@ int Detection(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH], int cell_detecte
                 for (int q = 0; q < 7; q++){
 
                     if (x + p > BMP_WIDTH || y + q > BMP_HEIGTH || x - p < 0 || y - q < 0){
-                      printf(stderr,"Out of bounds");
+                      fprintf(stderr,"Out of bounds");
                       break;
                     }
                   input_image[x + p][y + q] = 100;
