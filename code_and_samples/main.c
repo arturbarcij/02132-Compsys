@@ -12,6 +12,20 @@
 #include "cbmp.h"
 #include <time.h>
 
+// Macros for time analysis
+#ifdef TIME_ANALYSIS
+    #define START_TIMER start = clock();
+    #define STOP_TIMER(operation) \
+        end = clock(); \
+        cpu_time_used = ((double) (end - start)) * 1000.0 / CLOCKS_PER_SEC; \
+        //printf("Time for %s: %f ms\n", operation, cpu_time_used);
+#else
+    #define START_TIMER
+    #define STOP_TIMER(operation)
+#endif
+
+
+
 //Function to invert pixels of an image (negative)
 void invert(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS], unsigned char output_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS]){
   for (int x = 0; x < BMP_WIDTH; x++)
@@ -321,8 +335,10 @@ int y_coords[500];
 //Main function
 int main(int argc, char** argv)
 {
-       clock_t start, end;
-       double cpu_time_used;
+    clock_t start, end;       // Declare the variables once at the beginning
+    double cpu_time_used;
+    double er = 0;
+    double det = 0;
   //argc counts how may arguments are passed
   //argv[0] is a string with the name of the program
   //argv[1] is the first command line argument (input image)
@@ -348,19 +364,25 @@ int main(int argc, char** argv)
   Binarize(gray_image, bin_image);
 
   for (int i = 0; i < 3; i++){
+    
     sleep(1);
     // Start timing before erosion
-    start = clock();
+    START_TIMER;
     erode(bin_image);
     // End timing after erosion
-    end = clock();
-    // Calculate the time difference in milliseconds
-    cpu_time_used = ((double) (end - start)) * 1000.0 / CLOCKS_PER_SEC;
-    printf("Time for erosion %d: %f ms\n", i + 1, cpu_time_used);
+    er = STOP_TIMER("erosion");
 
+    START_TIMER;
     countDetects += Detection(bin_image, cell_detected, x_coords, y_coords);
+    det = STOP_TIMER("detection");
 
     printf("Number of cells detected: %d\n", countDetects);
+
+    // Calculate the time difference in milliseconds
+    //cpu_time_used = ((double) (end - start)) * 1000.0 / CLOCKS_PER_SEC;
+    //printf("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n");
+    //printf("Time analysis %d: %f ms\n", i + 1, cpu_time_used);
+    //printf("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n");
 
     Convert23D(bin_image, output_image);
     DrawCrosses(input_image, x_coords, y_coords, countDetects);
@@ -371,9 +393,15 @@ int main(int argc, char** argv)
         
 
   printf("Done!\n");
+  printf("Execution time analysis:\n");
+  printf("Time for erosion: %d, detection: %d ms\n", er, det);
+  printf("Time for both: %d", (er + det));
   return 0;
 }
 
 //To compile (linux/mac): gcc cbmp.c main.c -o main.out -std=c99
 //To run (linux/mac): ./main.out example.bmp example_inv.bmp
 //To run: .\main.out <input file path> <output file path>
+
+//To compile (win): gcc cbmp.c main.c -o main.exe -std=c99
+//To run (win): main.exe example.bmp example_inv.bmp
