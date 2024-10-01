@@ -35,14 +35,14 @@ void rgb2gray(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS], un
   }
 }
 
-void Binarize(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH], unsigned char bin_image[BMP_WIDTH][BMP_HEIGTH]){
+void Binarize(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH], unsigned char bin_image[BMP_WIDTH][BMP_HEIGTH], int T){
   //Gamma mapping
   for (int x = 0; x < BMP_WIDTH; x++)
   {
     for (int y = 0; y < BMP_HEIGTH; y++)
     {
       //Binarizing
-      if (input_image[x][y] > 90)
+      if (input_image[x][y] > T)
       {
         bin_image[x][y] = 255;
       }
@@ -125,6 +125,8 @@ int Detection(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH], int cell_detecte
               x_coords[cell_detected] = x;
               y_coords[cell_detected] = y;
 
+              printf("%d", x_coords);
+
               // Making the detected cell black
               for (int p = 0; p < 7; p++){
                 for (int q = 0; q < 7; q++){
@@ -177,6 +179,55 @@ void DrawCrosses(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS],
     }
   }
 }
+
+int Otsu3(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH]) {
+    int histogram[256] = {0};
+
+    for(int x = 0; x < BMP_WIDTH; x++) {
+        for(int y = 0; y < BMP_HEIGTH; y++) {
+            histogram[input_image[x][y]]++;
+        }
+    }
+
+    double probability[256], mean[256];
+    double max_between, between[256];
+    int threshold;
+
+    /*
+    probability = class probability
+    mean = class mean
+    between = between class variance
+    */
+
+    for(int i = 0; i < 256; i++) {
+        probability[i] = 0.0;
+        mean[i] = 0.0;
+        between[i] = 0.0;
+    }
+
+    probability[0] = histogram[0];
+
+    for(int i = 1; i < 256; i++) {
+        probability[i] = probability[i - 1] + histogram[i];
+        mean[i] = mean[i - 1] + i * histogram[i];
+    }
+
+    threshold = 0;
+    max_between = 0.0;
+
+    for(int i = 0; i < 255; i++) {
+        if(probability[i] != 0.0 && probability[i] != 1.0)
+            between[i] = pow(mean[255] * probability[i] - mean[i], 2) / (probability[i] * (1.0 - probability[i]));
+    else
+        between[i] = 0.0;
+        if(between[i] > max_between) {
+            max_between = between[i];
+            threshold = i;
+        }
+    }
+    return threshold;
+}
+
 
 void Otsu2(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH], int T) {
   int N = BMP_WIDTH*BMP_HEIGTH;
@@ -245,7 +296,8 @@ void Otsu(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH], int T) {
 	float betweenvariance=0;//between group variance
 	float maxbetweenvariance=0;//max between group variance
 	float sum=0;//sum of all histogram values to calculate the mean grey level value of the imagem values before threshholding
-	float optimizedthresh=0;//optimized threshhold,   
+	float optimizedthresh=0;//optimized threshhold,
+  float mu_t;   
 
 
 
@@ -278,11 +330,8 @@ void Otsu(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH], int T) {
   for (int t = 0; t < 256; t++) 
   {
     q1next = q1prev+CDF[t+1];
-    printf("q1next: %f\n", q1next);
     mu1next = (q1prev*mu1+(t+1)*(CDF[t+1]))/q1next;
-    printf("mu1next: %f\n", mu1next);
     mu2next = (mu-q1next*mu1next)/(1-q1next);
-    printf("mu2next: %f\n", mu2next);
     betweenvariance = q1prev*(1-q1prev)*((mu1-mu2)*(mu1-mu2));
     //printf("Between variance: %f\n", betweenvariance);
     if (betweenvariance > maxbetweenvariance) {
@@ -313,6 +362,7 @@ unsigned char detect_image[BMP_WIDTH][BMP_HEIGTH];
 int cell_detected = 0;
 int x_coords[500];
 int y_coords[500];
+int T;
 
 
 //Main function
@@ -340,7 +390,9 @@ int main(int argc, char** argv)
   //Run inversion
   //invert(input_image,output_image);
   rgb2gray(input_image, gray_image);
-  Binarize(gray_image, bin_image);
+  T = Otsu3(gray_image);
+  printf("Threshold: %d\n", T);
+  Binarize(gray_image, bin_image, T);
 
   // for (int i = 0; i < 3; i++){
   //   sleep(1);
