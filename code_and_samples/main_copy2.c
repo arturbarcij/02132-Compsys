@@ -108,7 +108,7 @@ void erode(unsigned char output_image[BMP_WIDTH][BMP_HEIGTH]) {
                     i++;
                     // tjek boundary på array
                     if (i >= 100000) {
-                        fprintf(stderr, "du har en lille array brorz");
+                        fprintf(stderr, "test boundaries");
                         return;
                     }
                 }
