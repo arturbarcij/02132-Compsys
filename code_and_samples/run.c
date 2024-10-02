@@ -11,7 +11,7 @@ int main() {
     clock_t start, end;
 
     printf("EASY TEST: \n");
-    for (int i = 0; i < 10; i++) {
+    for (int i = 1; i < 11; i++) {
         
         double cpu_time_used;start = clock();
         // Construct the command with the current value of i
@@ -32,7 +32,7 @@ int main() {
     }
 
     printf("MEDIUM TEST: \n");
-    for (int i = 0; i < 10; i++) {
+    for (int i = 1; i < 11; i++) {
         
         double cpu_time_used;start = clock();
         // Construct the command with the current value of i
@@ -53,7 +53,7 @@ int main() {
     }
 
     printf("HARD TEST: \n");
-    for (int i = 0; i < 10; i++) {
+    for (int i = 1; i < 11; i++) {
         
         double cpu_time_used;start = clock();
         // Construct the command with the current value of i
