@@ -9,6 +9,8 @@
 #include <stdio.h>
 #include <unistd.h>
 #include "cbmp.h"
+#include <math.h>
+#include <time.h>
 
 //Function to invert pixels of an image (negative)
 void invert(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS], unsigned char output_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS]){
@@ -77,31 +79,67 @@ void erode(unsigned char output_image[BMP_WIDTH][BMP_HEIGTH]) {
             if (output_image[x][y] == 255) {
                 // Check for out of bonds hallojsa
                 // Cross-erosion
-                // if ((x > 0 && output_image[x - 1][y] == 0) ||
-                //     (x < BMP_WIDTH - 1 && output_image[x + 1][y] == 0) ||
-                //     (y > 0 && output_image[x][y - 1] == 0) ||
-                //     (y < BMP_HEIGTH - 1 && output_image[x][y + 1] == 0))
+                // 0 1 0
+                // 1 1 1
+                // 0 1 0
+                if ((x > 0 && output_image[x - 1][y] == 0) ||
+                    (x < BMP_WIDTH - 1 && output_image[x + 1][y] == 0) ||
+                    (y > 0 && output_image[x][y - 1] == 0) ||
+                    (y < BMP_HEIGTH - 1 && output_image[x][y + 1] == 0))
 
                 // Diagonal-erosion
+                // 1 0 1
+                // 0 1 0
+                // 1 0 1
                 // if (x > 0 && output_image[x - 1][y - 1] == 0 ||
                 //     x < BMP_WIDTH - 1 && output_image[x + 1][y + 1] == 0 ||
                 //     y >  0 && output_image[x - 1][y + 1] == 0 ||
                 //     y < BMP_HEIGTH - 1 && output_image[x + 1][y - 1] == 0) 
 
                 //Diamond erosion (5x5 erosion zone)
-                if (x > 2 && output_image[x - 2][y] == 0 ||
-                    x > 1 && output_image[x - 1][y] == 0 ||
-                    x < BMP_WIDTH - 1 && output_image[x + 1][y] == 0 ||
-                    x < BMP_WIDTH - 2 && output_image[x + 2][y] == 0 ||
-                    y > 2 && output_image[x][y - 2] == 0 ||
-                    y > 1 && output_image[x][y - 1] == 0 ||
-                    y < BMP_HEIGTH - 1 && output_image[x][y + 1] == 0 ||
-                    y < BMP_HEIGTH - 2 && output_image[x][y + 2] == 0 ||
-                    x > 1 && y > 1 && output_image[x - 1][y - 1] == 0 ||
-                    x < BMP_WIDTH - 1 && y < BMP_HEIGTH - 1 && output_image[x + 1][y + 1] == 0 ||
-                    x > 1 && y < BMP_HEIGTH - 1 && output_image[x - 1][y + 1] == 0 ||
-                    x < BMP_WIDTH - 1 && y > 1 && output_image[x + 1][y - 1] == 0)
+                // 0 0 1 0 0 
+                // 0 1 1 1 0
+                // 1 1 1 1 1
+                // 0 1 1 1 0
+                // 0 0 1 0 0
+        
+                // if (x > 2 && output_image[x - 2][y] == 0 ||
+                //     x > 1 && output_image[x - 1][y] == 0 ||
+                //     x < BMP_WIDTH - 1 && output_image[x + 1][y] == 0 ||
+                //     x < BMP_WIDTH - 2 && output_image[x + 2][y] == 0 ||
+                //     y > 2 && output_image[x][y - 2] == 0 ||
+                //     y > 1 && output_image[x][y - 1] == 0 ||
+                //     y < BMP_HEIGTH - 1 && output_image[x][y + 1] == 0 ||
+                //     y < BMP_HEIGTH - 2 && output_image[x][y + 2] == 0 ||
+                //     x > 1 && y > 1 && output_image[x - 1][y - 1] == 0 ||
+                //     x < BMP_WIDTH - 1 && y < BMP_HEIGTH - 1 && output_image[x + 1][y + 1] == 0 ||
+                //     x > 1 && y < BMP_HEIGTH - 1 && output_image[x - 1][y + 1] == 0 ||
+                //     x < BMP_WIDTH - 1 && y > 1 && output_image[x + 1][y - 1] == 0)
 
+                // Box
+                // 1 1 1
+                // 1 1 1
+                // 1 1 1
+                // if ((x > 0 && output_image[x - 1][y] == 0) ||
+                //     (x < BMP_WIDTH - 1 && output_image[x + 1][y] == 0) ||
+                //     (y > 0 && output_image[x][y - 1] == 0) ||
+                //     (y < BMP_HEIGTH - 1 && output_image[x][y + 1] == 0) ||
+                //     (x > 0 && output_image[x - 1][y - 1] == 0 ||
+                //     (x < BMP_WIDTH - 1 && output_image[x + 1][y + 1] == 0) ||
+                //     (y >  0 && output_image[x - 1][y + 1] == 0) ||
+                //     (y < BMP_HEIGTH - 1 && output_image[x + 1][y - 1]) == 0))
+
+                // Line
+                // 1 1 1
+                // if ((x > 0 && output_image[x - 1][y] == 0) ||
+                //     (x < BMP_WIDTH - 1 && output_image[x + 1][y] == 0))
+
+                // Diagonal line
+                // 1 0 0
+                // 0 1 0
+                // 0 0 1
+                // if ((x > 0 && y < BMP_HEIGTH - 1 && output_image[x - 1][y + 1] == 0) ||
+                //     (x < BMP_WIDTH - 1 && y > 0 && output_image[x + 1][y - 1] == 0))
                 {
                     arr_x[i] = x;
                     arr_y[i] = y;
@@ -169,7 +207,7 @@ return cell_detected;
 
 
 void DrawCrosses(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS], int x_coords[500], int y_coords[500], int cell_detected){
-  for (int i = 1; i < cell_detected+1; i++){
+  for (int i = 0; i < cell_detected; i++){
     if ((x_coords[i] != 0) && (y_coords[i] != 0)) {
       for (int x = 0; x < 7; x++){
         for (int w = -1; w <= 1; w++){
@@ -262,6 +300,52 @@ int Otsu(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH]) {
   return optimizedthresh;
 }
 
+void ApplyPrewittFilter(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH], unsigned char output_image[BMP_WIDTH][BMP_HEIGTH]) {
+    int gx, gy;
+    float sum;
+
+    int prewitt_V[3][3] = {
+    {-1, 0, 1},
+    {-1, 0, 1},
+    {-1, 0, 1}
+};
+
+int prewitt_H[3][3] = {
+    {-1, -1, -1},
+    {0, 0, 0},
+    {1, 1, 1}
+};
+
+    for (int x = 1; x < BMP_WIDTH - 1; x++) {
+        for (int y = 1; y < BMP_HEIGTH - 1; y++) {
+            gx = 0;
+            gy = 0;
+
+            // Apply the Prewitt kernels
+            for (int i = -1; i <= 1; i++) {
+                for (int j = -1; j <= 1; j++) {
+                    gx += input_image[x + i][y + j] * prewitt_V[i + 1][j + 1];
+                    gy += input_image[x + i][y + j] * prewitt_H[i + 1][j + 1];
+                }
+            }
+
+            // Calculate the gradient magnitude
+            sum = pow((pow(abs(gx),2) + pow(abs(gy),2)),0.5);
+
+            // Clamp the result to the range [0, 255]
+            if (sum > 255) {
+                sum = 255;
+            } else if (sum < 0) {
+                sum = 0;
+            }
+
+            output_image[x][y] = (unsigned char)sum;
+        }
+    }
+}
+
+
+
 //Declaring the array to store the image (unsigned char = unsigned 8 bit)
 unsigned char input_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS];
 unsigned char output_2d[BMP_WIDTH][BMP_HEIGTH];
@@ -271,6 +355,10 @@ int x_coords[500];
 int y_coords[500];
 int countDetects = 0;
 int T;
+int count = 0;
+int detects_old = 0;
+int detecs_old_old = 0;
+
 
 //Removed for memory purposes
 // unsigned char output_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS];
@@ -299,29 +387,44 @@ int main(int argc, char** argv)
       exit(1);
   }
 
-  printf("Example program - 02132 - A1\n");
+
+  
 
   //Load image from file
   read_bitmap(argv[1], input_image);
 
   //Run inversion
-  //invert(input_image,output_image);
+
   rgb2gray(input_image, output_2d);
-  printf("Optimized threshold: %d\n",Otsu(output_2d));
+
+  //printf("Optimized threshold: %d\n",Otsu(output_2d));
   T = Otsu(output_2d);
   Binarize(output_2d, output_2d, T);
 
-  for (int i = 0; i < 18; i++){
+  while(1){
     erode(output_2d);
     countDetects = Detection(output_2d, x_coords, y_coords, countDetects);
+    detects_old = countDetects;
+    count++;
+    if (detects_old == countDetects && count > 10){
+      break;
+    }
+
   }
+  // for (int i = 0; i < 18; i++){
+  //   // sleep(2);
+  //   erode(output_2d);
+  //   // Convert23D(output_2d, output_3d);
+  //   //DrawCrosses(input_image, x_coords, y_coords, countDetects);
+  //   // write_bitmap(output_3d, argv[2]);
+
+  //   countDetects = Detection(output_2d, x_coords, y_coords, countDetects);
+  // }
 
   printf("Number of cells detected: %d\n", countDetects);
   Convert23D(output_2d, output_3d);
   DrawCrosses(input_image, x_coords, y_coords, countDetects);
   write_bitmap(input_image, argv[2]);
-
-
 
   printf("Done!\n");
   return 0;
