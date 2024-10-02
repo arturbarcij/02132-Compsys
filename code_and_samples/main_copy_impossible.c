@@ -1,5 +1,5 @@
 // main.c
-// Corrected version to output the result of the algorithm with crosses drawn over detected cells
+// Corrected and debugged code with expected output
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -35,15 +35,16 @@ typedef struct {
     double value;
 } BottleneckPoint;
 
-typedef struct {
-    Point centroid;
-    Boundary boundary;
-} Cell;
-
 // Function prototypes
+void invert(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS], unsigned char output_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS]);
 void rgb2gray(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS], unsigned char gray_image[BMP_WIDTH][BMP_HEIGTH]);
-void binarize(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH], unsigned char bin_image[BMP_WIDTH][BMP_HEIGTH], int T);
-int otsu_threshold(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH]);
+void Binarize(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH], unsigned char bin_image[BMP_WIDTH][BMP_HEIGTH], int T);
+void Convert23D(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH], unsigned char output_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS]);
+void DrawCrosses(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS], int x_coords[MAX_CELLS], int y_coords[MAX_CELLS], int cell_detected);
+int Otsu(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH]);
+
+// Bottleneck detection functions
+void process_image(unsigned char bin_image[BMP_WIDTH][BMP_HEIGTH]);
 void find_boundary(unsigned char bin_image[BMP_WIDTH][BMP_HEIGTH], Boundary* boundary, int start_x, int start_y, bool visited[BMP_WIDTH][BMP_HEIGTH]);
 void calculate_centroid(Boundary* boundary, double* centroid_x, double* centroid_y);
 void calculate_distance_profile(Boundary* boundary, double centroid_x, double centroid_y, DoubleArray* distance_profile);
@@ -53,10 +54,16 @@ void calculate_curvature(Boundary* boundary, DoubleArray* curvature);
 void validate_bottleneck_points(BottleneckPoint* bottleneck_points, int* bottleneck_count, DoubleArray* curvature, Boundary* boundary);
 void find_minimum_distance_pair(BottleneckPoint* bottleneck_points, int bottleneck_count, Point* point1, Point* point2);
 void draw_line(unsigned char bin_image[BMP_WIDTH][BMP_HEIGTH], Point p1, Point p2);
-void process_image(unsigned char bin_image[BMP_WIDTH][BMP_HEIGTH]);
-void label_cells(unsigned char bin_image[BMP_WIDTH][BMP_HEIGTH], Cell cells[MAX_CELLS], int* cell_count);
-void draw_crosses(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS], Cell cells[MAX_CELLS], int cell_count);
-void overlay_boundaries(unsigned char output_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS], Cell cells[MAX_CELLS], int cell_count);
+
+// Declaring the array to store the image (unsigned char = unsigned 8 bit)
+unsigned char input_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS];
+unsigned char output_2d[BMP_WIDTH][BMP_HEIGTH];
+unsigned char output_3d[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS];
+
+int x_coords[MAX_CELLS];
+int y_coords[MAX_CELLS];
+int countDetects = 0;
+int T;
 
 // Main function
 int main(int argc, char** argv)
@@ -68,63 +75,103 @@ int main(int argc, char** argv)
         exit(1);
     }
 
-    printf("Cell Segmentation using Bottleneck Detection Algorithm\n");
+    printf("Example program - 02132 - A1\n");
 
     // Load image from file
-    unsigned char input_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS];
     read_bitmap(argv[1], input_image);
+    printf("Image loaded successfully.\n");
 
     // Convert RGB to grayscale
-    unsigned char gray_image[BMP_WIDTH][BMP_HEIGTH];
-    rgb2gray(input_image, gray_image);
+    rgb2gray(input_image, output_2d);
+    printf("Image converted to grayscale.\n");
 
     // Binarize the image using Otsu's method
-    int T = otsu_threshold(gray_image);
+    T = Otsu(output_2d);
     printf("Optimized threshold: %d\n", T);
-
-    unsigned char bin_image[BMP_WIDTH][BMP_HEIGTH];
-    binarize(gray_image, bin_image, T);
+    Binarize(output_2d, output_2d, T);
+    printf("Image binarized.\n");
 
     // Process the image to separate overlapping cells
-    process_image(bin_image);
+    printf("Starting image processing...\n");
+    process_image(output_2d);
+    printf("Image processing completed.\n");
 
-    // Label and collect cell data after segmentation
-    Cell cells[MAX_CELLS];
-    int cell_count = 0;
-    label_cells(bin_image, cells, &cell_count);
+    // Detect cells and store their centroids
+    bool visited[BMP_WIDTH][BMP_HEIGTH] = {false};
+    countDetects = 0;
+    printf("Starting cell detection...\n");
 
-    printf("Number of cells detected: %d\n", cell_count);
+    for (int y = 0; y < BMP_HEIGTH; y++) {
+        for (int x = 0; x < BMP_WIDTH; x++) {
+            if (output_2d[x][y] == 255 && !visited[x][y]) {
+                Boundary boundary;
+                find_boundary(output_2d, &boundary, x, y, visited);
 
-    // Prepare output image by copying the original image
-    unsigned char output_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS];
-    memcpy(output_image, input_image, sizeof(output_image));
+                if (boundary.count == 0) {
+                    continue;
+                }
 
-    // Draw cell boundaries on the output image
-    overlay_boundaries(output_image, cells, cell_count);
+                // Calculate centroid
+                double centroid_x, centroid_y;
+                calculate_centroid(&boundary, &centroid_x, &centroid_y);
 
-    // Draw crosses on the centroids of the detected cells
-    draw_crosses(output_image, cells, cell_count);
+                if (countDetects < MAX_CELLS) {
+                    x_coords[countDetects] = (int)centroid_x;
+                    y_coords[countDetects] = (int)centroid_y;
+                    countDetects++;
+                } else {
+                    printf("Maximum number of cells exceeded.\n");
+                    break;
+                }
+            }
+        }
+    }
 
-    // Save the processed image with crosses and boundaries
-    write_bitmap(output_image, argv[2]);
+    printf("Cell detection completed.\n");
+    printf("Number of cells detected: %d\n", countDetects);
 
-    printf("Processing completed. Output saved to %s\n", argv[2]);
+    // Draw crosses on the original input image at the centroids of the detected cells
+    DrawCrosses(input_image, x_coords, y_coords, countDetects);
+    printf("Crosses drawn on image.\n");
+
+    // Save the processed image
+    write_bitmap(input_image, argv[2]);
+    printf("Processed image saved to %s\n", argv[2]);
+
+    printf("Done!\n");
     return 0;
 }
 
 // Function implementations
+
+void invert(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS], unsigned char output_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS]){
+    for (int x = 0; x < BMP_WIDTH; x++)
+    {
+        for (int y = 0; y < BMP_HEIGTH; y++)
+        {
+            for (int c = 0; c < BMP_CHANNELS; c++)
+            {
+                output_image[x][y][c] = 255 - input_image[x][y][c];
+            }
+        }
+    }
+}
 
 void rgb2gray(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS], unsigned char gray_image[BMP_WIDTH][BMP_HEIGTH]){
     for (int x = 0; x < BMP_WIDTH; x++)
     {
         for (int y = 0; y < BMP_HEIGTH; y++)
         {
-            gray_image[x][y] = (unsigned char)((input_image[x][y][0] + input_image[x][y][1] + input_image[x][y][2]) / 3);
+            gray_image[x][y] = (input_image[x][y][0] + input_image[x][y][1] + input_image[x][y][2]) / 3;
         }
     }
 }
 
-void binarize(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH], unsigned char bin_image[BMP_WIDTH][BMP_HEIGTH], int T){
+void Binarize(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH], unsigned char bin_image[BMP_WIDTH][BMP_HEIGTH], int T){
+    if (T < 0 || T > 255){
+        printf("Setting threshold to default (90)\n");
+        T = 90;
+    }
     for (int x = 0; x < BMP_WIDTH; x++)
     {
         for (int y = 0; y < BMP_HEIGTH; y++)
@@ -141,48 +188,163 @@ void binarize(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH], unsigned char bi
     }
 }
 
-int otsu_threshold(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH]) {
+void Convert23D(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH], unsigned char output_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS]){
+    for (int x = 0; x < BMP_WIDTH; x++)
+    {
+        for (int y = 0; y < BMP_HEIGTH; y++)
+        {
+            for (int c = 0; c < BMP_CHANNELS; c++)
+            {
+                output_image[x][y][c] = input_image[x][y];
+            }
+        }
+    }
+}
+
+void DrawCrosses(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS], int x_coords[MAX_CELLS], int y_coords[MAX_CELLS], int cell_detected){
+    for (int i = 0; i < cell_detected; i++){
+        if ((x_coords[i] != 0) && (y_coords[i] != 0)) {
+            for (int x = -7; x <= 7; x++){
+                if (x_coords[i] + x >= 0 && x_coords[i] + x < BMP_WIDTH){
+                    input_image[x_coords[i] + x][y_coords[i]][0] = 255; // Red
+                    input_image[x_coords[i] + x][y_coords[i]][1] = 0;
+                    input_image[x_coords[i] + x][y_coords[i]][2] = 0;
+                }
+            }
+            for (int y = -7; y <= 7; y++){
+                if (y_coords[i] + y >= 0 && y_coords[i] + y < BMP_HEIGTH){
+                    input_image[x_coords[i]][y_coords[i] + y][0] = 255; // Red
+                    input_image[x_coords[i]][y_coords[i] + y][1] = 0;
+                    input_image[x_coords[i]][y_coords[i] + y][2] = 0;
+                }
+            }
+        }
+    }
+}
+
+int Otsu(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH]) {
     // Otsu's method implementation
-    int histogram[256] = {0};
-    for (int x = 0; x < BMP_WIDTH; x++) {
-        for (int y = 0; y < BMP_HEIGTH; y++) {
-            histogram[input_image[x][y]]++;
+    float hist[256] = {0};
+    double sum = 0;
+    float total = BMP_WIDTH * BMP_HEIGTH;
+
+    for (int x = 0; x < BMP_WIDTH; x++)
+    {
+        for (int y = 0; y < BMP_HEIGTH; y++)
+        {
+            hist[input_image[x][y]]++; // Grey scale histogram
+            sum += input_image[x][y];
         }
     }
 
-    int total = BMP_WIDTH * BMP_HEIGTH;
-    float sum = 0;
-    for (int t = 0; t < 256; t++) sum += t * histogram[t];
+    // Normalize histogram
+    for (int i = 0; i < 256; i++)
+    {
+        hist[i] = hist[i] / total;
+    }
 
-    float sumB = 0;
-    int wB = 0;
-    int wF = 0;
+    float q1 = 0.0;
+    float mu1 = 0.0;
+    float mu = sum / total;
+    float max_between_variance = 0.0;
+    int optimized_thresh = 0;
 
-    float varMax = 0;
-    int threshold = 0;
+    for (int t = 0; t < 256; t++)
+    {
+        q1 += hist[t];
+        if (q1 == 0)
+            continue;
+        if (q1 == 1)
+            break;
+        mu1 += t * hist[t];
 
-    for (int t = 0; t < 256; t++) {
-        wB += histogram[t];
-        if (wB == 0) continue;
-        wF = total - wB;
-        if (wF == 0) break;
+        float mu2 = (mu - mu1) / (1 - q1);
+        float between_variance = q1 * (1 - q1) * (mu1 / q1 - mu2) * (mu1 / q1 - mu2);
 
-        sumB += (float)(t * histogram[t]);
-
-        float mB = sumB / wB;
-        float mF = (sum - sumB) / wF;
-
-        float varBetween = (float)wB * (float)wF * (mB - mF) * (mB - mF);
-
-        if (varBetween > varMax) {
-            varMax = varBetween;
-            threshold = t;
+        if (between_variance > max_between_variance)
+        {
+            max_between_variance = between_variance;
+            optimized_thresh = t;
         }
     }
-    return threshold;
+
+    return optimized_thresh;
 }
 
 // Bottleneck Detection Algorithm Functions
+
+void process_image(unsigned char bin_image[BMP_WIDTH][BMP_HEIGTH]) {
+    bool changes_made = true;
+    int iteration_count = 0;
+    int max_iterations = 10; // Set a reasonable limit
+
+    bool visited[BMP_WIDTH][BMP_HEIGTH];
+
+    while (changes_made) {
+        changes_made = false;
+        iteration_count++;
+        if (iteration_count > max_iterations) {
+            printf("Maximum iterations reached in process_image.\n");
+            break;
+        }
+        printf("Iteration %d in process_image.\n", iteration_count);
+
+        // Reset visited array
+        memset(visited, false, sizeof(visited));
+
+        for (int y = 0; y < BMP_HEIGTH; y++) {
+            for (int x = 0; x < BMP_WIDTH; x++) {
+                if (bin_image[x][y] == 255 && !visited[x][y]) {
+                    // Start processing a new clump
+                    Boundary boundary;
+                    find_boundary(bin_image, &boundary, x, y, visited);
+
+                    if (boundary.count == 0) {
+                        continue;
+                    }
+
+                    // Process the clump
+                    // Calculate the centroid of the boundary
+                    double centroid_x, centroid_y;
+                    calculate_centroid(&boundary, &centroid_x, &centroid_y);
+
+                    // Compute the distance profile
+                    DoubleArray distance_profile;
+                    calculate_distance_profile(&boundary, centroid_x, centroid_y, &distance_profile);
+
+                    // Calculate the slope differences
+                    DoubleArray slope_differences;
+                    calculate_slope_differences(&distance_profile, &slope_differences);
+
+                    // Identify bottleneck points
+                    BottleneckPoint bottleneck_points[MAX_BOTTLENECK_POINTS];
+                    int bottleneck_count = 0;
+                    find_bottleneck_points(&slope_differences, &boundary, bottleneck_points, &bottleneck_count);
+
+                    // Calculate curvature
+                    DoubleArray curvature;
+                    calculate_curvature(&boundary, &curvature);
+
+                    // Validate bottleneck points
+                    validate_bottleneck_points(bottleneck_points, &bottleneck_count, &curvature, &boundary);
+
+                    if (bottleneck_count >= 2) {
+                        // Find minimum distance pair
+                        Point p1, p2;
+                        find_minimum_distance_pair(bottleneck_points, bottleneck_count, &p1, &p2);
+
+                        // Draw line between bottleneck points to separate cells
+                        draw_line(bin_image, p1, p2);
+
+                        // Mark that changes were made
+                        changes_made = true;
+                    }
+                }
+            }
+        }
+    }
+    printf("Exiting process_image after %d iterations.\n", iteration_count);
+}
 
 void find_boundary(unsigned char bin_image[BMP_WIDTH][BMP_HEIGTH], Boundary* boundary, int start_x, int start_y, bool visited[BMP_WIDTH][BMP_HEIGTH]) {
     int width = BMP_WIDTH;
@@ -259,26 +421,29 @@ void calculate_distance_profile(Boundary* boundary, double centroid_x, double ce
 }
 
 void calculate_slope_differences(DoubleArray* distance_profile, DoubleArray* slope_differences) {
-    // First, calculate the slopes
     int n = distance_profile->count;
-    double slopes[MAX_BOUNDARY_POINTS];
 
+    // Use slope_differences->values as temporary storage for slopes
+    double* slopes = slope_differences->values;
+
+    // Calculate slopes
     for (int i = 0; i < n; i++) {
         int next = (i + 1) % n;
         slopes[i] = distance_profile->values[next] - distance_profile->values[i];
     }
 
-    // Now, calculate the slope differences
-    slope_differences->count = n;
-
+    // Calculate slope differences
     for (int i = 0; i < n; i++) {
         int next = (i + 1) % n;
         slope_differences->values[i] = slopes[next] - slopes[i];
     }
+
+    slope_differences->count = n;
 }
 
+
 void find_bottleneck_points(DoubleArray* slope_differences, Boundary* boundary, BottleneckPoint* bottleneck_points, int* bottleneck_count) {
-    double threshold = 0.5; // Threshold for local maxima; adjust as needed
+    double threshold = 0.1; // Threshold for local maxima; adjust as needed
     int count = 0;
 
     for (int i = 1; i < slope_differences->count - 1; i++) {
@@ -372,177 +537,37 @@ void find_minimum_distance_pair(BottleneckPoint* bottleneck_points, int bottlene
 }
 
 void draw_line(unsigned char bin_image[BMP_WIDTH][BMP_HEIGTH], Point p1, Point p2) {
+    // Bresenham's Line Algorithm
     int x0 = p1.x;
     int y0 = p1.y;
     int x1 = p2.x;
     int y1 = p2.y;
 
     int dx = abs(x1 - x0);
-    int dy = -abs(y1 - y0);
+    int dy = abs(y1 - y0);
+
     int sx = (x0 < x1) ? 1 : -1;
     int sy = (y0 < y1) ? 1 : -1;
-    int err = dx + dy;
+
+    int err = dx - dy;
 
     while (true) {
-        // Set pixel to background
         if (x0 >= 0 && x0 < BMP_WIDTH && y0 >= 0 && y0 < BMP_HEIGTH) {
-            bin_image[x0][y0] = 0;
+            // Instead of setting to 0, set to a mid-gray value to distinguish from background
+            bin_image[x0][y0] = 128;
         }
 
         if (x0 == x1 && y0 == y1)
             break;
 
         int e2 = 2 * err;
-        if (e2 >= dy) {
-            err += dy;
+        if (e2 > -dy) {
+            err -= dy;
             x0 += sx;
         }
-        if (e2 <= dx) {
+        if (e2 < dx) {
             err += dx;
             y0 += sy;
-        }
-    }
-}
-
-void process_image(unsigned char bin_image[BMP_WIDTH][BMP_HEIGTH]) {
-    bool changes_made = true;
-
-    while (changes_made) {
-        changes_made = false;
-
-        bool visited[BMP_WIDTH][BMP_HEIGTH] = {false};
-
-        for (int y = 0; y < BMP_HEIGTH; y++) {
-            for (int x = 0; x < BMP_WIDTH; x++) {
-                if (bin_image[x][y] == 255 && !visited[x][y]) {
-                    // Start processing a new clump
-                    Boundary boundary;
-                    find_boundary(bin_image, &boundary, x, y, visited);
-
-                    if (boundary.count == 0) {
-                        continue;
-                    }
-
-                    // Process the clump
-                    // Calculate the centroid of the boundary
-                    double centroid_x, centroid_y;
-                    calculate_centroid(&boundary, &centroid_x, &centroid_y);
-
-                    // Compute the distance profile
-                    DoubleArray distance_profile;
-                    calculate_distance_profile(&boundary, centroid_x, centroid_y, &distance_profile);
-
-                    // Calculate the slope differences
-                    DoubleArray slope_differences;
-                    calculate_slope_differences(&distance_profile, &slope_differences);
-
-                    // Identify bottleneck points
-                    BottleneckPoint bottleneck_points[MAX_BOTTLENECK_POINTS];
-                    int bottleneck_count = 0;
-                    find_bottleneck_points(&slope_differences, &boundary, bottleneck_points, &bottleneck_count);
-
-                    // Calculate curvature
-                    DoubleArray curvature;
-                    calculate_curvature(&boundary, &curvature);
-
-                    // Validate bottleneck points
-                    validate_bottleneck_points(bottleneck_points, &bottleneck_count, &curvature, &boundary);
-
-                    if (bottleneck_count >= 2) {
-                        // Find minimum distance pair
-                        Point p1, p2;
-                        find_minimum_distance_pair(bottleneck_points, bottleneck_count, &p1, &p2);
-
-                        // Draw line between bottleneck points to separate cells
-                        draw_line(bin_image, p1, p2);
-
-                        // Mark that changes were made
-                        changes_made = true;
-                    }
-                }
-            }
-        }
-    }
-}
-
-void label_cells(unsigned char bin_image[BMP_WIDTH][BMP_HEIGTH], Cell cells[MAX_CELLS], int* cell_count) {
-    bool visited[BMP_WIDTH][BMP_HEIGTH] = {false};
-    int cell_idx = 0;
-
-    for (int y = 0; y < BMP_HEIGTH; y++) {
-        for (int x = 0; x < BMP_WIDTH; x++) {
-            if (bin_image[x][y] == 255 && !visited[x][y]) {
-                if (cell_idx >= MAX_CELLS) {
-                    printf("Maximum number of cells exceeded.\n");
-                    break;
-                }
-
-                // Find the boundary of the cell
-                Boundary boundary;
-                find_boundary(bin_image, &boundary, x, y, visited);
-
-                if (boundary.count == 0) {
-                    continue;
-                }
-
-                // Calculate centroid
-                double centroid_x, centroid_y;
-                calculate_centroid(&boundary, &centroid_x, &centroid_y);
-
-                // Save cell data
-                cells[cell_idx].boundary = boundary;
-                cells[cell_idx].centroid.x = (int)centroid_x;
-                cells[cell_idx].centroid.y = (int)centroid_y;
-
-                cell_idx++;
-            }
-        }
-    }
-    *cell_count = cell_idx;
-}
-
-void draw_crosses(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS], Cell cells[MAX_CELLS], int cell_count){
-    for (int i = 0; i < cell_count; i++){
-        int cx = cells[i].centroid.x;
-        int cy = cells[i].centroid.y;
-
-        // Draw a cross centered at (cx, cy)
-        int size = 7; // Size of the cross
-        for (int x = -size; x <= size; x++){
-            if (cx + x >= 0 && cx + x < BMP_WIDTH){
-                if (cy >= 0 && cy < BMP_HEIGTH){
-                    // Horizontal line
-                    input_image[cx + x][cy][0] = 255; // Red
-                    input_image[cx + x][cy][1] = 0;
-                    input_image[cx + x][cy][2] = 0;
-                }
-            }
-        }
-        for (int y = -size; y <= size; y++){
-            if (cy + y >= 0 && cy + y < BMP_HEIGTH){
-                if (cx >= 0 && cx < BMP_WIDTH){
-                    // Vertical line
-                    input_image[cx][cy + y][0] = 255; // Red
-                    input_image[cx][cy + y][1] = 0;
-                    input_image[cx][cy + y][2] = 0;
-                }
-            }
-        }
-    }
-}
-
-void overlay_boundaries(unsigned char output_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS], Cell cells[MAX_CELLS], int cell_count) {
-    for (int i = 0; i < cell_count; i++) {
-        Boundary boundary = cells[i].boundary;
-        for (int j = 0; j < boundary.count; j++) {
-            int x = boundary.points[j].x;
-            int y = boundary.points[j].y;
-
-            if (x >= 0 && x < BMP_WIDTH && y >= 0 && y < BMP_HEIGTH) {
-                output_image[x][y][0] = 0;   // Blue
-                output_image[x][y][1] = 0;
-                output_image[x][y][2] = 255;
-            }
         }
     }
 }
