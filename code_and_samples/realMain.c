@@ -255,6 +255,28 @@ void DrawCrosses(unsigned char input_image[BMP_WIDTH][BMP_HEIGHT][BMP_CHANNELS],
     }
 }
 
+void testCheckPlaceValueAndMakeDead() {
+    // Initialize a test image
+    unsigned char test_image[BitBMP][BMP_HEIGHT] = {0};
+    
+    
+    test_image[0][0] = 120;  //has bit value 01111000
+    test_image[1][1] = 5;  
+    
+    
+    int result1 = checkPlaceValue(test_image, 1, 0); 
+    printf("Check place value at (1,0): %d\n", result1);
+    
+   
+    int result2 = checkPlaceValue(test_image, 7, 1); 
+    printf("Check place value at (7,1): %d\n", result2);
+    
+    
+    makeDead(test_image, 1, 0); 
+    int result3 = checkPlaceValue(test_image, 1, 0); 
+    printf("Check place value at (0,0) after makeDead: %d\n", result3);
+}
+
 
 int main(int argc, char** argv) {
     if (argc != 3) {
@@ -303,6 +325,8 @@ int main(int argc, char** argv) {
 
     // print out the image again
     write_bitmap(input_image, argv[2]);
+
+    testCheckPlaceValueAndMakeDead();
 
     printf("Done!\n");
     return 0;
