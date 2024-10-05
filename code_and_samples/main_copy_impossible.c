@@ -310,6 +310,7 @@ void process_image(unsigned char bin_image[BMP_WIDTH][BMP_HEIGTH]) {
 
                     // Compute the distance profile
                     DoubleArray distance_profile;
+                    distance_profile.count = boundary.count;
                     calculate_distance_profile(&boundary, centroid_x, centroid_y, &distance_profile);
 
                     // Calculate the slope differences
@@ -345,6 +346,7 @@ void process_image(unsigned char bin_image[BMP_WIDTH][BMP_HEIGTH]) {
     }
     printf("Exiting process_image after %d iterations.\n", iteration_count);
 }
+
 
 void find_boundary(unsigned char bin_image[BMP_WIDTH][BMP_HEIGTH], Boundary* boundary, int start_x, int start_y, bool visited[BMP_WIDTH][BMP_HEIGTH]) {
     int width = BMP_WIDTH;

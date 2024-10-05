@@ -75,12 +75,11 @@ void erode(unsigned char output_image[BMP_WIDTH][BMP_HEIGTH]) {
     for (int x = 0; x < BMP_WIDTH; x++) {
         for (int y = 0; y < BMP_HEIGTH; y++) {
             if (output_image[x][y] == 255) {
-                // Check for out of bonds hallojsa
-                // Cross-erosion
-                // if ((x > 0 && output_image[x - 1][y] == 0) ||
-                //     (x < BMP_WIDTH - 1 && output_image[x + 1][y] == 0) ||
-                //     (y > 0 && output_image[x][y - 1] == 0) ||
-                //     (y < BMP_HEIGTH - 1 && output_image[x][y + 1] == 0))
+        
+                if ((x > 0 && output_image[x - 1][y] == 0) ||
+                    (x < BMP_WIDTH - 1 && output_image[x + 1][y] == 0) ||
+                    (y > 0 && output_image[x][y - 1] == 0) ||
+                    (y < BMP_HEIGTH - 1 && output_image[x][y + 1] == 0))
 
                 // Diagonal-erosion
                 // if (x > 0 && output_image[x - 1][y - 1] == 0 ||
@@ -89,18 +88,7 @@ void erode(unsigned char output_image[BMP_WIDTH][BMP_HEIGTH]) {
                 //     y < BMP_HEIGTH - 1 && output_image[x + 1][y - 1] == 0) 
 
                 //Diamond erosion (5x5 erosion zone)
-                if (x > 2 && output_image[x - 2][y] == 0 ||
-                    x > 1 && output_image[x - 1][y] == 0 ||
-                    x < BMP_WIDTH - 1 && output_image[x + 1][y] == 0 ||
-                    x < BMP_WIDTH - 2 && output_image[x + 2][y] == 0 ||
-                    y > 2 && output_image[x][y - 2] == 0 ||
-                    y > 1 && output_image[x][y - 1] == 0 ||
-                    y < BMP_HEIGTH - 1 && output_image[x][y + 1] == 0 ||
-                    y < BMP_HEIGTH - 2 && output_image[x][y + 2] == 0 ||
-                    x > 1 && y > 1 && output_image[x - 1][y - 1] == 0 ||
-                    x < BMP_WIDTH - 1 && y < BMP_HEIGTH - 1 && output_image[x + 1][y + 1] == 0 ||
-                    x > 1 && y < BMP_HEIGTH - 1 && output_image[x - 1][y + 1] == 0 ||
-                    x < BMP_WIDTH - 1 && y > 1 && output_image[x + 1][y - 1] == 0)
+          
 
                 {
                     arr_x[i] = x;

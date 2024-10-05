@@ -2,7 +2,7 @@
 //To run (linux/mac): ./main.out code_and_samples/example.bmp code_and_samples/example_inv.bmp
 //To run: .\main.out <input file path> <output file path>
 
-//To compile (win): gcc cbmp.c main.c -o main.exe -std=c99
+//To compile (win): gcc cbmp.c main.c -o main.exe -std=c99 -DTIME_ANALYSIS
 //To run (win): main.exe example.bmp example_inv.bmp
 
 #include <stdlib.h>
