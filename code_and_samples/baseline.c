@@ -18,6 +18,8 @@ int T;
 int count = 0;
 int detects_old = 0;
 int detecs_old_old = 0;
+// clock_t start, end;
+// double cpu_time_used;
 
 //Function to invert pixels of an image (negative)
 void invert(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS], unsigned char output_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS]){
@@ -182,8 +184,7 @@ void DrawCrosses(unsigned char input_image[BMP_WIDTH][BMP_HEIGTH][BMP_CHANNELS],
 }
 
 //Main function
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
   //argc counts how may arguments are passed
   //argv[0] is a string with the name of the program
   //argv[1] is the first command line argument (input image)
@@ -196,6 +197,7 @@ int main(int argc, char** argv)
       exit(1);
   }
 
+// start = clock();    
   //Load image from file
   read_bitmap(argv[1], input_image);
 
@@ -216,15 +218,15 @@ int main(int argc, char** argv)
     if (detects_old == countDetects && count > 10){
       break;
     }
-
   }
-
   //Prints the number of cells detected, draws crosses on the detected cells and writes the image to file.
   printf("Number of cells detected: %d\n", countDetects);
   Convert23D(output_2d, output_3d);
   DrawCrosses(input_image, x_coords, y_coords, countDetects);
   write_bitmap(input_image, argv[2]);
-
-  printf("Done!\n");
+    
+    // end = clock();
+    // cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+    // printf("Time taken: %f\n", cpu_time_used);
   return 0;
 }
